@@ -1,425 +1,267 @@
-<?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE html>
-<html b:css='false' b:defaultwidgetversion='2' b:layoutsversion='3' dir='rtl' lang='ar' xmlns='http://www.w3.org/1999/xhtml' xmlns:b='http://www.google.com/thoughtful/2007/alternative' xmlns:data='http://www.google.com/thoughtful/2007/data' xmlns:expr='http://www.google.com/thoughtful/2007/expr'>
+<html lang="ar" dir="rtl">
 <head>
-    <meta content='width=device-width, initial-scale=1' name='viewport'/>
-    <title>بوابة السويدي المتكاملة</title>
-    <b:skin><![CDATA[
-        body { margin: 0; padding: 0; font-family: 'Cairo', sans-serif; background: #f8fafc; }
-        #navbar-iframe { display: none !important; }
-        .print-only { display: none; }
-        @media print {
-            .no-print { display: none !important; }
-            .print-only { display: block !important; }
-            .print-card { border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; page-break-inside: avoid; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة السويدي للتكنولوجيا - النسخة السحابية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans Arabic', sans-serif; background-color: #f3f4f6; }
+        .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            border-left-color: #fff;
+            animation: spin 1s linear infinite;
         }
-        .elsewedy-blue { color: #002d5a; }
-        .elsewedy-bg { background-color: #002d5a; }
-    ]]></b:skin>
-    <link href='https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&amp;display=swap' rel='stylesheet'/>
-    <script src='https://cdn.tailwindcss.com'/>
-    <script src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'/>
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
 </head>
-<body>
-    <b:section class='main' id='main' maxwidgets='1' showaddelement='no'>
-        <b:widget id='Blog1' locked='true' title='HR Portal' type='Blog' visible='true'>
-            <b:includable id='main'>
-                <div id='app-root'>
-                    <!-- React App will be injected here via the script below -->
+<body class="min-h-screen pb-10">
+
+    <header class="bg-[#0964b0] text-white shadow-lg p-4 sticky top-0 z-40">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-white p-2 rounded-lg text-[#0964b0] font-bold">Elsewedy</div>
+                <h1 class="text-xl font-bold hidden md:block">نظام المأموريات الذكي</h1>
+            </div>
+            <div id="authStatus" class="text-xs bg-blue-800 px-3 py-1 rounded-full">جاري الاتصال بالسحابة...</div>
+        </div>
+    </header>
+
+    <main class="container mx-auto mt-8 p-4 max-w-5xl">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- نموذج الإدخال -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl shadow-lg p-6 border-t-4 border-[#0964b0] sticky top-24">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800">تسجيل مأمورية</h2>
+                    <form id="missionForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">اسم الموظف</label>
+                            <input type="text" id="employeeName" required class="w-full p-2 border rounded focus:ring-2 focus:ring-[#0964b0] outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">جهة المأمورية</label>
+                            <input type="text" id="destination" required class="w-full p-2 border rounded focus:ring-2 focus:ring-[#0964b0] outline-none">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">من تاريخ</label>
+                                <input type="date" id="startDate" required class="w-full p-2 border rounded text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">إلى تاريخ</label>
+                                <input type="date" id="endDate" required class="w-full p-2 border rounded text-sm">
+                            </div>
+                        </div>
+                        <button type="submit" id="submitBtn" disabled class="w-full bg-[#0964b0] text-white py-3 rounded font-bold hover:bg-[#074d8a] disabled:opacity-50 transition-all flex justify-center items-center gap-2">
+                            <span>إرسال للبيانات السحابية</span>
+                        </button>
+                    </form>
                 </div>
+            </div>
 
-                <script type='module'>
-                    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-                    import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
-                    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-                    import React, { useState, useEffect, useMemo } from "https://esm.sh/react@18.2.0";
-                    import { createRoot } from "https://esm.sh/react-dom@18.2.0/client";
+            <!-- عرض البيانات -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="p-4 bg-gray-50 border-b flex justify-between items-center">
+                        <h3 class="font-bold">السجل العام (مباشر)</h3>
+                        <span id="counter" class="text-sm bg-gray-200 px-2 py-1 rounded">جاري التحميل...</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right border-collapse">
+                            <thead class="bg-gray-100 text-gray-600 text-sm">
+                                <tr>
+                                    <th class="p-4 border-b">الموظف</th>
+                                    <th class="p-4 border-b">الجهة</th>
+                                    <th class="p-4 border-b">الفترة</th>
+                                    <th class="p-4 border-b">الإجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dataTable">
+                                <tr><td colspan="4" class="p-10 text-center text-gray-400">يرجى الانتظار، جاري جلب البيانات...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
 
-                    // --- Configuration & Initialization ---
-                    const firebaseConfig = JSON.parse(__firebase_config);
-                    const app = initializeApp(firebaseConfig);
-                    const db = getFirestore(app);
-                    const auth = getAuth(app);
-                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'elsewedy-portal-001';
+    <!-- Modal -->
+    <div id="statusModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-lg max-w-sm w-full text-center shadow-2xl">
+            <div id="modalIcon" class="mx-auto mb-4"></div>
+            <h3 id="modalTitle" class="text-lg font-bold mb-2"></h3>
+            <p id="modalMsg" class="text-gray-600 mb-6 text-sm"></p>
+            <button onclick="closeModal()" class="bg-[#0964b0] text-white px-8 py-2 rounded">إغلاق</button>
+        </div>
+    </div>
 
-                    const App = () => {
-                        const [user, setUser] = useState(null);
-                        const [userData, setUserData] = useState(null);
-                        const [view, setView] = useState('login');
-                        const [allVacations, setAllVacations] = useState([]);
-                        const [allMissions, setAllMissions] = useState([]);
-                        const [loading, setLoading] = useState(true);
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-                        // --- Auth Logic ---
-                        useEffect(() => {
-                            signInAnonymously(auth);
-                            onAuthStateChanged(auth, (u) => {
-                                if (u) setUser(u);
-                            });
-                        }, []);
+        // Firebase Configuration (Environment Provided)
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'elsewedy-portal-v1';
 
-                        // --- Data Fetching ---
-                        useEffect(() => {
-                            if (!user) return;
-                            const vQuery = collection(db, 'artifacts', appId, 'public', 'data', 'vacations');
-                            const mQuery = collection(db, 'artifacts', appId, 'public', 'data', 'missions');
-                            
-                            const unsubV = onSnapshot(vQuery, (snap) => {
-                                setAllVacations(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-                            });
-                            const unsubM = onSnapshot(mQuery, (snap) => {
-                                setAllMissions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-                            });
-                            setLoading(false);
-                            return () => { unsubV(); unsubM(); };
-                        }, [user]);
+        const form = document.getElementById('missionForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const dataTable = document.getElementById('dataTable');
+        const authStatus = document.getElementById('authStatus');
+        const counter = document.getElementById('counter');
 
-                        // --- UI Logic Functions ---
-                        const handleLogin = (empId) => {
-                            // Mock User Database logic
-                            const roles = {
-                                '101': { name: 'أحمد علي', role: 'employee', balance: 15, dept: 'الإنتاج', manager: '201' },
-                                '201': { name: 'محمد حسن', role: 'manager', dept: 'الإنتاج', manager: '301' },
-                                '301': { name: 'سارة خالد', role: 'director', dept: 'الإنتاج', manager: 'hr' },
-                                'hr': { name: 'إدارة الموارد البشرية', role: 'hr' }
-                            };
-                            const found = roles[empId];
-                            if (found) {
-                                setUserData({ ...found, id: empId });
-                                setView('dashboard');
-                            } else {
-                                alert("كود الموظف غير صحيح");
-                            }
-                        };
+        let user = null;
 
-                        const submitVacation = async (formData) => {
-                            const newDoc = {
-                                ...formData,
-                                employeeId: userData.id,
-                                employeeName: userData.name,
-                                department: userData.dept,
-                                status: 'pending_manager',
-                                createdAt: new Date().toISOString()
-                            };
-                            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vacations'), newDoc);
-                            alert("تم إرسال الطلب للمدير المباشر");
-                        };
+        // 1. Auth Logic - Following Rule 3: Auth Before Queries
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth Error", error);
+                authStatus.innerHTML = "❌ خطأ في الاتصال بالسحابة";
+            }
+        }
 
-                        const submitMission = async (formData) => {
-                            const newDoc = {
-                                ...formData,
-                                employeeId: userData.id,
-                                employeeName: userData.name,
-                                status: 'pending_manager',
-                                createdAt: new Date().toISOString()
-                            };
-                            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'missions'), newDoc);
-                            alert("تم إرسال طلب المأمورية");
-                        };
+        // Listen for auth state changes
+        onAuthStateChanged(auth, (u) => {
+            user = u;
+            if (user) {
+                authStatus.innerHTML = `✅ متصل كمستخدم: ${user.uid.substring(0,6)}`;
+                submitBtn.disabled = false;
+                startSync();
+            } else {
+                authStatus.innerHTML = "⏳ جاري تسجيل الدخول...";
+                submitBtn.disabled = true;
+            }
+        });
 
-                        const updateStatus = async (coll, id, newStatus) => {
-                            const docRef = doc(db, 'artifacts', appId, 'public', 'data', coll, id);
-                            await updateDoc(docRef, { status: newStatus });
-                        };
+        // 2. Real-time Sync Logic (Rule 1 & 2)
+        function startSync() {
+            if (!user) return;
+            
+            // Following Rule 1: Strict Paths
+            const publicCol = collection(db, 'artifacts', appId, 'public', 'data', 'missions');
+            
+            onSnapshot(publicCol, (snapshot) => {
+                const missions = [];
+                snapshot.forEach(doc => {
+                    missions.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Rule 2: Sort in memory
+                missions.sort((a, b) => {
+                    const dateA = a.createdAt?.seconds || 0;
+                    const dateB = b.createdAt?.seconds || 0;
+                    return dateB - dateA;
+                });
+                
+                renderData(missions);
+            }, (error) => {
+                console.error("Sync Error", error);
+                if (error.code === 'permission-denied') {
+                    authStatus.innerHTML = "⚠️ خطأ في صلاحيات الوصول";
+                }
+            });
+        }
 
-                        const exportToExcel = () => {
-                            const worksheet = XLSX.utils.json_to_sheet(allVacations);
-                            const workbook = XLSX.utils.book_new();
-                            XLSX.utils.book_append_sheet(workbook, worksheet, "Vacations");
-                            XLSX.writeFile(workbook, "Elsewedy_Vacations_Report.xlsx");
-                        };
+        function renderData(data) {
+            counter.innerText = `${data.length} طلبات مسجلة`;
+            if (data.length === 0) {
+                dataTable.innerHTML = `<tr><td colspan="4" class="p-10 text-center text-gray-400">لا توجد بيانات مسجلة في السحابة</td></tr>`;
+                return;
+            }
 
-                        // --- Components ---
-                        const LoginView = () => (
-                            <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
-                                <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md border-t-8 border-blue-900">
-                                    <div className="text-center mb-8">
-                                        <h1 className="text-4xl font-black text-blue-900 tracking-tighter italic">ELSEWEDY</h1>
-                                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-1">Electrometer Group</p>
-                                    </div>
-                                    <input id="login-id" type="text" placeholder="كود الموظف" className="w-full p-4 border rounded-xl mb-4 text-center font-bold text-lg focus:ring-2 focus:ring-blue-900 outline-none" />
-                                    <button onClick={() => handleLogin(document.getElementById('login-id').value)} className="w-full bg-blue-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-800 shadow-lg">دخول النظام</button>
-                                </div>
-                            </div>
-                        );
+            dataTable.innerHTML = data.map(item => `
+                <tr class="hover:bg-blue-50 transition-colors border-b">
+                    <td class="p-4 font-bold text-gray-800">${item.employeeName}</td>
+                    <td class="p-4">${item.destination}</td>
+                    <td class="p-4 text-xs text-gray-500">${item.startDate} / ${item.endDate}</td>
+                    <td class="p-4">
+                        <button onclick="window.deleteEntry('${item.id}')" class="text-red-500 hover:text-red-700 text-sm">حذف</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
 
-                        const Dashboard = () => (
-                            <div className="flex flex-col md:flex-row min-h-screen">
-                                <aside className="w-full md:w-64 bg-blue-900 text-white p-6 no-print">
-                                    <h2 className="text-2xl font-black mb-8 italic">ELSEWEDY</h2>
-                                    <nav className="space-y-4">
-                                        <button onClick={() => setView('dashboard')} className="w-full text-right p-3 hover:bg-white/10 rounded-lg">الرئيسية</button>
-                                        <button onClick={() => setView('vacations')} className="w-full text-right p-3 hover:bg-white/10 rounded-lg">الإجازات</button>
-                                        <button onClick={() => setView('missions')} className="w-full text-right p-3 hover:bg-white/10 rounded-lg">المأموريات</button>
-                                        {userData.role === 'hr' && <button onClick={() => setView('hr_reports')} className="w-full text-right p-3 hover:bg-white/10 rounded-lg font-bold text-yellow-400">تقارير الـ HR</button>}
-                                        <button onClick={() => location.reload()} className="w-full text-right p-3 hover:bg-red-500/20 text-red-300 mt-12 border-t border-white/10 pt-6">خروج</button>
-                                    </nav>
-                                </aside>
-                                <main className="flex-1 p-4 md:p-10">
-                                    {renderView()}
-                                </main>
-                            </div>
-                        );
+        // 3. Submit Logic
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!user) {
+                showModal("تنبيه", "يرجى الانتظار حتى يتم الاتصال بالسحابة", "error");
+                return;
+            }
 
-                        const VacationRequest = () => {
-                            const [type, setType] = useState('اعتيادية');
-                            const canRequest = userData.balance > 0;
-                            return (
-                                <div className="max-w-2xl bg-white p-8 rounded-2xl shadow-md mx-auto">
-                                    <h3 className="text-2xl font-bold mb-6 text-blue-900 border-b pb-2">طلب إجازة جديد</h3>
-                                    <div className="mb-4 p-4 bg-blue-50 rounded-lg flex justify-between items-center">
-                                        <span className="font-bold">رصيدك الحالي:</span>
-                                        <span className={`text-2xl font-black ${userData.balance <= 0 ? 'text-red-600' : 'text-blue-900'}`}>{userData.balance} يوم</span>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block mb-1 font-bold">نوع الإجازة</label>
-                                            <select onChange={(e) => setType(e.target.value)} className="w-full p-3 border rounded-lg">
-                                                {userData.balance > 0 && <option value="اعتيادية">اعتيادية</option>}
-                                                {userData.balance > 0 && <option value="عارضة">عارضة</option>}
-                                                <option value="غياب بإذن">غياب بإذن (رصيد صفر)</option>
-                                                <option value="مرضية">مرضية</option>
-                                            </select>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div><label className="block mb-1 font-bold">من تاريخ</label><input type="date" id="v-start" className="w-full p-3 border rounded-lg"/></div>
-                                            <div><label className="block mb-1 font-bold">إلى تاريخ</label><input type="date" id="v-end" className="w-full p-3 border rounded-lg"/></div>
-                                        </div>
-                                        <button 
-                                            onClick={() => submitVacation({
-                                                type,
-                                                start: document.getElementById('v-start').value,
-                                                end: document.getElementById('v-end').value,
-                                                days: 1 // Logic to calc days should be added
-                                            })}
-                                            className="w-full bg-blue-900 text-white py-4 rounded-xl font-bold text-lg"
-                                        >إرسال للطلبات</button>
-                                    </div>
-                                </div>
-                            );
-                        };
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<div class="loading-spinner"></div> جارِ الحفظ...';
 
-                        const MissionRequest = () => {
-                            const [itinerary, setItinerary] = useState([{ from: '', to: '', allowance: 0 }]);
-                            const calculateTotal = () => itinerary.reduce((sum, item) => sum + Number(item.allowance), 0);
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'missions'), {
+                    employeeName: document.getElementById('employeeName').value,
+                    destination: document.getElementById('destination').value,
+                    startDate: document.getElementById('startDate').value,
+                    endDate: document.getElementById('endDate').value,
+                    createdAt: serverTimestamp(),
+                    userId: user.uid
+                });
 
-                            const addRow = () => setItinerary([...itinerary, { from: '', to: '', allowance: 0 }]);
+                showModal("تم الحفظ!", "تمت مزامنة البيانات مع السحابة بنجاح.", "success");
+                form.reset();
+            } catch (err) {
+                console.error("Save Error", err);
+                showModal("خطأ!", "فشل الحفظ في السحابة. تأكد من الصلاحيات والاتصال.", "error");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span>إرسال للبيانات السحابية</span>';
+            }
+        });
 
-                            return (
-                                <div className="max-w-3xl bg-white p-8 rounded-2xl shadow-md mx-auto">
-                                    <h3 className="text-2xl font-bold mb-6 text-blue-900">نظام المأموريات والبدلات</h3>
-                                    <div className="grid grid-cols-2 gap-4 mb-6">
-                                        <div>
-                                            <label className="block mb-1 font-bold">النوع</label>
-                                            <select className="w-full p-3 border rounded-lg" id="m-type">
-                                                <option>داخلية</option>
-                                                <option>خارجية</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block mb-1 font-bold">التوقيت</label>
-                                            <select className="w-full p-3 border rounded-lg" id="m-time">
-                                                <option>بداية يوم</option>
-                                                <option>نهاية يوم</option>
-                                                <option>يوم كامل</option>
-                                                <option>جزء من اليوم</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-4 mb-6">
-                                        <label className="block font-bold">خط السير والبدلات</label>
-                                        {itinerary.map((item, idx) => (
-                                            <div key={idx} className="flex gap-2">
-                                                <input placeholder="من" className="flex-1 p-2 border rounded" onChange={(e) => {
-                                                    const newItin = [...itinerary];
-                                                    newItin[idx].from = e.target.value;
-                                                    setItinerary(newItin);
-                                                }}/>
-                                                <input placeholder="إلى" className="flex-1 p-2 border rounded" onChange={(e) => {
-                                                    const newItin = [...itinerary];
-                                                    newItin[idx].to = e.target.value;
-                                                    setItinerary(newItin);
-                                                }}/>
-                                                <input type="number" placeholder="البدل" className="w-24 p-2 border rounded" onChange={(e) => {
-                                                    const newItin = [...itinerary];
-                                                    newItin[idx].allowance = e.target.value;
-                                                    setItinerary(newItin);
-                                                }}/>
-                                            </div>
-                                        ))}
-                                        <button onClick={addRow} className="text-sm text-blue-600 font-bold">+ إضافة خط سير</button>
-                                    </div>
-                                    <div className="p-4 bg-gray-50 rounded-lg flex justify-between font-bold mb-6">
-                                        <span>إجمالي البدلات المحتسبة:</span>
-                                        <span className="text-xl text-green-700">{calculateTotal()} ج.م</span>
-                                    </div>
-                                    <button onClick={() => submitMission({
-                                        type: document.getElementById('m-type').value,
-                                        time: document.getElementById('m-time').value,
-                                        itinerary,
-                                        totalAllowance: calculateTotal()
-                                    })} className="w-full bg-blue-900 text-white py-4 rounded-xl font-bold">حفظ وإرسال للاعتماد</button>
-                                </div>
-                            );
-                        };
+        // Delete function
+        window.deleteEntry = async (id) => {
+            if (!user) return;
+            if (confirm('هل أنت متأكد من حذف هذا السجل؟')) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'missions', id));
+                } catch (e) {
+                    console.error("Delete failed", e);
+                    alert("فشل الحذف: قد لا تملك الصلاحية الكافية");
+                }
+            }
+        };
 
-                        const ApprovalInbox = () => {
-                            const pendingV = allVacations.filter(v => 
-                                (userData.role === 'manager' && v.status === 'pending_manager') || 
-                                (userData.role === 'director' && v.status === 'pending_director') ||
-                                (userData.role === 'hr' && v.status === 'pending_hr')
-                            );
+        // Initialize Auth
+        initAuth();
+    </script>
 
-                            return (
-                                <div className="space-y-6">
-                                    <h3 className="text-2xl font-bold text-blue-900">طلبات تحتاج اعتمادك ({pendingV.length})</h3>
-                                    {pendingV.map(v => (
-                                        <div key={v.id} className="bg-white p-6 rounded-xl shadow border-r-4 border-yellow-500 flex flex-col md:flex-row justify-between items-center">
-                                            <div className="text-right">
-                                                <p className="font-bold text-lg">{v.employeeName}</p>
-                                                <p className="text-sm text-gray-500">نوع الإجازة: {v.type} | الفترة: {v.start} إلى {v.end}</p>
-                                            </div>
-                                            <div className="flex gap-2 mt-4 md:mt-0">
-                                                <button onClick={() => updateStatus('vacations', v.id, userData.role === 'manager' ? 'pending_director' : userData.role === 'director' ? 'pending_hr' : 'approved')} className="bg-green-600 text-white px-6 py-2 rounded-lg font-bold">موافقة</button>
-                                                <button onClick={() => updateStatus('vacations', v.id, 'rejected')} className="bg-red-600 text-white px-6 py-2 rounded-lg font-bold">رفض</button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            );
-                        };
+    <script>
+        function showModal(title, msg, type) {
+            const modal = document.getElementById('statusModal');
+            const icon = document.getElementById('modalIcon');
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMsg').innerText = msg;
+            
+            icon.innerHTML = type === 'success' 
+                ? '<div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div>'
+                : '<div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></div>';
+            
+            modal.classList.remove('hidden');
+        }
 
-                        const HRReports = () => (
-                            <div className="space-y-8 no-print">
-                                <div className="flex justify-between items-center">
-                                    <h3 className="text-2xl font-bold text-blue-900">لوحة تقارير الموارد البشرية</h3>
-                                    <div className="flex gap-2">
-                                        <button onClick={exportToExcel} className="bg-green-700 text-white px-4 py-2 rounded-lg font-bold">تصدير Excel</button>
-                                        <button onClick={() => window.print()} className="bg-gray-800 text-white px-4 py-2 rounded-lg font-bold">طباعة التقارير الفردية</button>
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-2xl shadow overflow-hidden">
-                                    <table className="w-full text-right">
-                                        <thead className="bg-blue-900 text-white">
-                                            <tr>
-                                                <th className="p-4">الموظف</th>
-                                                <th className="p-4">النوع</th>
-                                                <th className="p-4">من - إلى</th>
-                                                <th className="p-4">الحالة</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {allVacations.map(v => (
-                                                <tr key={v.id} className="border-b hover:bg-gray-50">
-                                                    <td className="p-4 font-bold">{v.employeeName}</td>
-                                                    <td className="p-4">{v.type}</td>
-                                                    <td className="p-4 text-sm">{v.start} / {v.end}</td>
-                                                    <td className="p-4">
-                                                        <span className={`px-2 py-1 rounded text-xs ${v.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                                                            {v.status}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        );
-
-                        const PrintReports = () => {
-                            // Group vacations by employee for individual print cards
-                            const grouped = useMemo(() => {
-                                const map = {};
-                                allVacations.filter(v => v.status === 'approved').forEach(v => {
-                                    if(!map[v.employeeId]) map[v.employeeId] = { name: v.employeeName, list: [] };
-                                    map[v.employeeId].list.push(v);
-                                });
-                                return Object.values(map);
-                            }, [allVacations]);
-
-                            return (
-                                <div className="print-only">
-                                    {grouped.map(emp => (
-                                        <div key={emp.name} className="print-card">
-                                            <div className="text-center mb-6">
-                                                <h1 className="text-2xl font-bold italic">ELSEWEDY ELECTROMETER</h1>
-                                                <h2 className="text-xl underline">تقرير إجازات الموظف لشهر الجاري</h2>
-                                            </div>
-                                            <div className="flex justify-between mb-4 border-b pb-2">
-                                                <span>اسم الموظف: <b>{emp.name}</b></span>
-                                                <span>التاريخ: {new Date().toLocaleDateString('ar-EG')}</span>
-                                            </div>
-                                            <table className="w-full border-collapse border border-gray-400 text-sm">
-                                                <thead>
-                                                    <tr className="bg-gray-100">
-                                                        <th className="border border-gray-400 p-2">نوع الإجازة</th>
-                                                        <th className="border border-gray-400 p-2">من</th>
-                                                        <th className="border border-gray-400 p-2">إلى</th>
-                                                        <th className="border border-gray-400 p-2">عدد الأيام</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {emp.list.map((v, i) => (
-                                                        <tr key={i}>
-                                                            <td className="border border-gray-400 p-2">{v.type}</td>
-                                                            <td className="border border-gray-400 p-2">{v.start}</td>
-                                                            <td className="border border-gray-400 p-2">{v.end}</td>
-                                                            <td className="border border-gray-400 p-2 text-center">{v.days}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                            <div className="grid grid-cols-3 gap-10 mt-20 text-center text-xs">
-                                                <div className="border-t border-black pt-2">توقيع الموظف</div>
-                                                <div className="border-t border-black pt-2">المدير المباشر</div>
-                                                <div className="border-t border-black pt-2">مدير الإدارة</div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            );
-                        };
-
-                        const renderView = () => {
-                            switch(view) {
-                                case 'vacations': return <VacationRequest />;
-                                case 'missions': return <MissionRequest />;
-                                case 'hr_reports': return <HRReports />;
-                                default: return (
-                                    <div className="grid grid-cols-1 gap-8">
-                                        <div className="bg-white p-8 rounded-2xl shadow-lg flex justify-between items-center border-r-8 border-blue-900">
-                                            <div>
-                                                <p className="text-gray-400 font-bold mb-1">أهلاً بك</p>
-                                                <h2 className="text-3xl font-black text-blue-900">{userData.name}</h2>
-                                                <p className="text-sm font-bold mt-2 text-blue-600 bg-blue-50 inline-block px-3 py-1 rounded-full">{userData.role.toUpperCase()}</p>
-                                            </div>
-                                            <div className="text-center">
-                                                <div className="w-24 h-24 bg-blue-900 rounded-full flex items-center justify-center text-white text-3xl font-black italic">E</div>
-                                            </div>
-                                        </div>
-                                        {(userData.role === 'manager' || userData.role === 'director' || userData.role === 'hr') && <ApprovalInbox />}
-                                    </div>
-                                );
-                            }
-                        };
-
-                        if (loading) return <div className="h-screen flex items-center justify-center font-bold">جاري تحميل النظام...</div>;
-
-                        return (
-                            <>
-                                {view === 'login' ? <LoginView /> : <Dashboard />}
-                                <PrintReports />
-                            </>
-                        );
-                    };
-
-                    const container = document.getElementById('app-root');
-                    const root = createRoot(container);
-                    root.render(<App />);
-                </script>
-            </b:includable>
-        </b:widget>
-    </b:section>
+        function closeModal() {
+            document.getElementById('statusModal').classList.add('hidden');
+        }
+    </script>
 </body>
 </html>
